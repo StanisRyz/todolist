@@ -7,7 +7,7 @@ from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.recycleboxlayout import RecycleBoxLayout
 from kivy.uix.label import Label
 from kivy.uix.behaviors import FocusBehavior
-from kivy.properties import BooleanProperty, StringProperty
+from kivy.properties import BooleanProperty, StringProperty, NumericProperty
 import sqlite3
 from kivy.core.window import Window
 from kivy.lang import Builder
@@ -33,18 +33,22 @@ class SelectableLabel(RecycleDataViewBehavior, FocusBehavior, Label):
     selected  = BooleanProperty(False)
     text = StringProperty("")
     index = None
-    task_id = None
+    task_id = NumericProperty(0)
 
     def refresh_view_attrs(self, rv, index, data):
         self.index = index
-        self.task_id = data.get('task_id', None)
+        self.task_id = data.get('task_id', 0)
         return super().refresh_view_attrs(rv, index, data)
 
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
-            self.selected = not self.selected
-            if self.selected and self.task_id:
-                app = App.get_running_app()
+            app = App.get_running_app()
+            main_screen = app.root.get_screen('main')
+            main_screen.reset_selection()
+
+            self.selected = True
+
+            if self.task_id:
                 app.root.current = 'detail'
                 app.root.get_screen('detail').load_task(self.task_id)
             return True
@@ -92,14 +96,16 @@ class MainScreen(Screen):
             bar_width = 10,
             bar_color = (0.5, 0.5, 0.5, 1),
         )
-        self.task_list.layout_manager = RecycleBoxLayout(
+        layout_manager = RecycleBoxLayout(
             default_size = (None, 50),
             default_size_hint = (1, None),
             orientation = 'vertical',
             size_hint_y = None,
             spacing = 5,
         )
-        self.task_list.layout_manager.bind(minimum_height = self.task_list.layout_manager.setter('height'))
+        layout_manager.bind(minimum_height = layout_manager.setter('height'))
+        self.task_list.layout_manager = layout_manager
+        self.task_list.add_widget(layout_manager)
         self.task_list.viewclass = SelectableLabel
         self.task_list.data = self.load_tasks()
         layout.add_widget(self.task_list)
@@ -145,6 +151,12 @@ class MainScreen(Screen):
             })
 
         return tasks
+
+    def reset_selection(self):
+        for item in self.task_list.data:
+            item['selected'] = False
+
+        self.task_list.refresh_from_data()
 
 class DetailScreen(Screen):
 
@@ -240,8 +252,12 @@ class DetailScreen(Screen):
         if self.task_id:
             try:
                 self.app.cursor.execute('UPDATE tasks SET completed = 1 WHERE id = ?', (self.task_id,))
+
                 self.app.conn.commit()
-                self.app.root.get_screen('main').task_list.data = self.app.root.get_screen('main').load_tasks()
+
+                main_screen = self.app.root.get_screen('main')
+                main_screen.task_list.data = main_screen.load_tasks()
+
                 self.app.root.current = 'main'
             except sqlite3.Error as e:
                 print('Ошибка базы данных:', e)
