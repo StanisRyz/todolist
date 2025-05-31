@@ -48,6 +48,15 @@ class MainScreen(Screen):
         add_button.bind(on_press=self.add_task)
         layout.add_widget(add_button)
 
+        archive_button = Button(
+            text = 'Показать архив',
+            size_hint = (1, None),
+            height = 50,
+            background_color = (0.4, 0.4, 0.6, 1),
+        )
+        archive_button.bind(on_press = self.show_archive)
+        layout.add_widget(archive_button)
+
         # Список задач
         self.task_list = RecycleView(
             size_hint=(1, 1),
@@ -122,3 +131,8 @@ class MainScreen(Screen):
         for item in self.task_list.data:
             item['selected'] = False
         self.task_list.refresh_from_data()
+
+    def show_archive(self, instance):
+        archive_screen = self.manager.get_screen('archive')
+        archive_screen.refresh_task_list()
+        self.manager.current = 'archive'

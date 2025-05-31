@@ -15,7 +15,8 @@ class Database:
                 tags TEXT,
                 description TEXT,
                 attachments TEXT,
-                completed INTEGER DEFAULT 0
+                completed INTEGER DEFAULT 0,
+                completed_date TEXT
             )
         ''')
         self.conn.commit()
@@ -45,8 +46,17 @@ class Database:
         self.conn.commit()
 
     def complete_task(self, task_id):
-        self.cursor.execute('UPDATE tasks SET completed = 1 WHERE id = ?', (task_id,))
+        from datetime import datetime
+        completed_date = datetime.now().strftime("%Y-%m-%d %H:%M")
+        self.cursor.execute(
+            'UPDATE tasks SET completed = 1, completed_date = ? WHERE id = ?',
+            (completed_date, task_id)
+        )
         self.conn.commit()
+
+    def get_completed_tasks(self):
+        self.cursor.execute('SELECT id, title, tags, completed_date FROM tasks WHERE completed = 1')
+        return self.cursor.fetchall()
 
     def close(self):
         self.conn.close()

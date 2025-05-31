@@ -5,6 +5,7 @@ from kivy.uix.screenmanager import ScreenManager
 from database import Database
 from screens.main_screen import MainScreen
 from screens.detail_screen import DetailScreen
+from screens.archive_screen import ArchiveScreen
 
 Builder.load_string('''
 <SelectableLabel>:
@@ -30,8 +31,9 @@ class ToDoApp(App):
 
         # Создание экранов
         sm = ScreenManager()
-        sm.add_widget(MainScreen(name='main', db=self.db))
-        sm.add_widget(DetailScreen(name='detail', db=self.db))
+        sm.add_widget(MainScreen(name = 'main', db = self.db))
+        sm.add_widget(DetailScreen(name = 'detail', db = self.db))
+        sm.add_widget(ArchiveScreen(name = 'archive', db = self.db))
 
         return sm
 
